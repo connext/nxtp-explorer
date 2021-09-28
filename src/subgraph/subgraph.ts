@@ -4,11 +4,11 @@ import { getDeployedSubgraphUri, getChainData } from '@connext/nxtp-utils'
 import { getReceiverTransactionsQuery, getLiquidityQuery } from './queries'
 import { config } from '../config'
 
-export const getTVL = async () => {
+export const getTransactionVolume = async () => {
   const chainData = await getChainData()
   const chains = config.chains
 
-  let tvl = 0
+  let totalVolume = 0
 
   for (const chainId of chains) {
     try {
@@ -17,8 +17,8 @@ export const getTVL = async () => {
       console.log(cd!.name)
 
       let _skip = 0
-      let totalTransactions = 0
-      let totalForChain = 0
+      let totalTransactionsForChain = 0
+      let totalVolumeForChain = 0
       let flag = 1
       const _first = 1000
 
@@ -33,7 +33,7 @@ export const getTVL = async () => {
         if (!txs || !txs.transactions) {
           break
         }
-        totalTransactions += txs.transactions.length
+        totalTransactionsForChain += txs.transactions.length
         _skip += txs.transactions.length
 
         console.log(txs)
@@ -51,20 +51,22 @@ export const getTVL = async () => {
           const decimals = cd!.assetId[utils.getAddress(tx.receivingAssetId)]
             ?.decimals
 
-          totalForChain += parseFloat(utils.formatUnits(tx.amount, decimals))
+          totalVolumeForChain += parseFloat(
+            utils.formatUnits(tx.amount, decimals),
+          )
         }
       }
 
-      tvl += totalForChain
+      totalVolume += totalVolumeForChain
 
       console.log('chainId: ', chainId)
-      console.log('totalForChain', totalForChain)
-      console.log('total transactions', totalTransactions)
+      console.log('totalForChain', totalVolumeForChain)
+      console.log('total transactions', totalTransactionsForChain)
     } catch (err) {
       console.error(err)
     }
   }
-  console.log('tvl', tvl)
+  console.log('tvl', totalVolume)
 }
 
 export const getRouterLiquidity = async () => {
@@ -87,9 +89,11 @@ export const getRouterLiquidity = async () => {
     for (const a of res.assetBalances) {
       const [asset, router] = a.id.split('-')
 
-      //   console.log(router, asset)
-
       const assetInfo = cd!.assetId[utils.getAddress(asset)]
+
+      if (!assetInfo) {
+        continue
+      }
       const formatedAmount = parseFloat(
         utils.formatUnits(a.amount, assetInfo.decimals),
       )
