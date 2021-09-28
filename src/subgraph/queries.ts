@@ -1,7 +1,13 @@
-import { gql } from 'graphql-request'
+// import { gql } from 'graphql-request'
+import { gql } from '@apollo/client'
 
 export const getReceiverTransactionsQuery = gql`
-  query($receivingChainId: BigInt!, $status: TransactionStatus!, $first: Int, $skip: Int) {
+  query(
+    $receivingChainId: BigInt!
+    $status: TransactionStatus!
+    $first: Int
+    $skip: Int
+  ) {
     transactions(
       where: { status: $status, receivingChainId: $receivingChainId }
       orderBy: preparedBlockNumber
