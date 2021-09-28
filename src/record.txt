@@ -1,0 +1,16 @@
+chainId:  137
+totalForChain 9296354.260430148
+total transactions 8995
+
+chainId:  100
+totalForChain 695545.3212253613
+total transactions 1141
+
+
+chainId:  250
+totalForChain 3415179.7278999407
+total transactions 2843
+
+chainId:  42161
+totalForChain 5680.525170000002
+total transactions 85
