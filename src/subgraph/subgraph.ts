@@ -9,7 +9,7 @@ export const getTransactionVolume = async () => {
   const chains = config.chains
 
   let totalVolume = 0
-
+  let totalTransactions = 0
   for (const chainId of chains) {
     try {
       const subgraph = getDeployedSubgraphUri(chainId)
@@ -58,6 +58,7 @@ export const getTransactionVolume = async () => {
       }
 
       totalVolume += totalVolumeForChain
+      totalTransactions += totalTransactionsForChain
 
       console.log('chainId: ', chainId)
       console.log('totalForChain', totalVolumeForChain)
@@ -66,25 +67,29 @@ export const getTransactionVolume = async () => {
       console.error(err)
     }
   }
-  console.log('tvl', totalVolume)
+  console.log('*************************')
+  console.log('Total Volume', totalVolume)
+  console.log('Total Transactions', totalTransactions)
 }
 
 export const getRouterLiquidity = async () => {
   const chainData = await getChainData()
   const chains = config.chains
 
+  let totalLiquidity = 0
   for (const chainId of chains) {
     const subgraph = getDeployedSubgraphUri(chainId)
 
     const res = await request(subgraph!, getLiquidityQuery, {})
 
-    // console.log(res.assetBalances)
     if (!res || !res.assetBalances || res.assetBalances.length === 0) {
       continue
     }
 
     const cd = chainData!.get(String(chainId))
     console.log(cd!.name)
+
+    let totalLiquidityForChain = 0
 
     for (const a of res.assetBalances) {
       const [asset, router] = a.id.split('-')
@@ -102,7 +107,13 @@ export const getRouterLiquidity = async () => {
         continue
       }
 
+      totalLiquidityForChain += formatedAmount
+
       console.log(router, assetInfo.symbol, formatedAmount)
     }
+
+    totalLiquidity += totalLiquidityForChain
+    console.log('totalLiquidityForChain', totalLiquidityForChain)
   }
+  console.log('Total Liquidity', totalLiquidity)
 }
