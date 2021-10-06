@@ -1,8 +1,29 @@
 import { request } from 'graphql-request'
 import { utils } from 'ethers'
-import { getDeployedSubgraphUri, getChainData } from '@connext/nxtp-utils'
+import { getChainData } from '@connext/nxtp-utils'
 import { getReceiverTransactionsQuery, getLiquidityQuery } from './queries'
 import { config } from '../config'
+
+export const getDeployedSubgraphUri = (chainId: number): string | undefined => {
+  switch (chainId) {
+    case 56:
+      // return "https://api.thegraph.com/subgraphs/name/connext/nxtp-bsc";
+      return 'https://api.thegraph.com/subgraphs/name/connext/nxtp-bsc-staging'
+    case 100:
+      return 'https://api.thegraph.com/subgraphs/name/connext/nxtp-xdai-staging'
+    case 137:
+      // return "https://api.thegraph.com/subgraphs/name/connext/nxtp-matic";
+      return 'https://api.thegraph.com/subgraphs/name/connext/nxtp-matic-staging'
+    case 250:
+      // return "https://api.thegraph.com/subgraphs/name/connext/nxtp-fantom";
+      return 'https://api.thegraph.com/subgraphs/name/connext/nxtp-fantom-staging'
+    case 42161:
+      // return "https://api.thegraph.com/subgraphs/name/connext/nxtp-arbitrum-one";
+      return 'https://api.thegraph.com/subgraphs/name/connext/nxtp-arbitrum-one-staging'
+    default:
+      return undefined
+  }
+}
 
 export const getTransactionVolume = async () => {
   const chainData = await getChainData()
