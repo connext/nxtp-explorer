@@ -3,21 +3,11 @@ import './App.css'
 import {
   getRouterLiquidity,
   getTransactionVolume,
-  getReceiverTransactionsQuery,
 } from './subgraph'
-import { useQuery } from '@apollo/client'
 
 import { Body, Button, Header } from './components'
 
 function App() {
-  const { loading, error, data } = useQuery(getReceiverTransactionsQuery)
-
-  React.useEffect(() => {
-    if (!loading && !error && data && data.transfers) {
-      console.log({ transfers: data.transfers })
-    }
-  }, [loading, error, data])
-
   const liq = async () => {
     try {
       await getRouterLiquidity()
