@@ -1,7 +1,7 @@
 import { request } from 'graphql-request'
 import { utils } from 'ethers'
 import { getDeployedSubgraphUri, getChainData } from '@connext/nxtp-utils'
-import { getReceiverTransactionsQuery, getLiquidityQuery } from './queries'
+import { getReceiverTransactionsQuery, getLiquidityQuery, getHourlyMetricsQuery } from './queries'
 import { config } from '../config'
 
 export const getTransactionVolume = async () => {
@@ -116,4 +116,72 @@ export const getRouterLiquidity = async () => {
     console.log('totalLiquidityForChain', totalLiquidityForChain)
   }
   console.log('Total Liquidity', totalLiquidity)
+}
+
+export const getTransactionVolumeByHour = async () => {
+  const chainData = await getChainData()
+  const chains = config.chains
+
+  let hourlyTxVolume = [] as any;
+
+  for (const chainId of chains) {
+    const subgraph = "https://api.thegraph.com/subgraphs/name/connext/nxtp-matic"
+
+    const _first = 1000;
+    let flag = 1;
+    let i = 0;
+
+    while(flag) {
+      const res = await request(subgraph!, getHourlyMetricsQuery, {
+        first: _first
+      })
+  
+      if (!res) {
+        continue
+      }
+
+      if (res.hourlyMetrics.length < _first) {
+        flag = 0;
+      }
+  
+      console.log(res)
+  
+      const cd = chainData!.get(String(chainId))
+      console.log(cd!.name)
+    
+      for (const a of res.hourlyMetrics) {
+        // const [asset, router] = a.id.split('-')
+  
+        const assetInfo = cd!.assetId[utils.getAddress(a.assetId)]
+  
+        if (!assetInfo) {
+          // Note, this will  happen for all sending chains
+          continue
+        }
+        const formattedVolume = parseFloat(
+          utils.formatUnits(a.volume, assetInfo.decimals),
+        )
+  
+        console.log("Volume: " + formattedVolume.toString() + ". AssetId: " + assetInfo.symbol + ". Time: " + a.hourStartTimestamp)
+  
+        if (hourlyTxVolume[i] && hourlyTxVolume[i].time == a.hourStartTimestamp) {
+          hourlyTxVolume[i].volume += formattedVolume;
+        } else {
+          i++;
+          hourlyTxVolume[i] = {
+            time: a.hourStartTimestamp,
+            volume: formattedVolume
+          };
+        }
+      }
+    }
+    
+    console.log("===========================================================")
+
+    console.log(hourlyTxVolume)
+
+    // totalLiquidity += totalLiquidityForChain
+    // console.log('totalLiquidityForChain', totalLiquidityForChain)
+  }
+  // console.log('Total Liquidity', totalLiquidity)
 }

@@ -8,6 +8,7 @@ import {
 import { useQuery } from '@apollo/client'
 
 import { Body, Button, Header } from './components'
+import { getTransactionVolumeByHour } from './subgraph/subgraph'
 
 function App() {
   const { loading, error, data } = useQuery(getReceiverTransactionsQuery)
@@ -28,7 +29,7 @@ function App() {
 
   const transactionVolume = async () => {
     try {
-      await getTransactionVolume()
+      await getTransactionVolumeByHour()
     } catch (e) {
       console.error(e)
     }

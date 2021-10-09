@@ -60,7 +60,9 @@ export const getLiquidityQuery = gql`
 `
 
 export const getHourlyMetricsQuery = gql`
-  query {
+  query(
+    $first: Int
+  ) {
     hourlyMetrics {
       id
       hourStartTimestamp
