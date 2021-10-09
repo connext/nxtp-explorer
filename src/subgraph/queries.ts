@@ -58,3 +58,16 @@ export const getLiquidityQuery = gql`
     }
   }
 `
+
+export const getHourlyMetricsQuery = gql`
+  query {
+    hourlyMetrics {
+      id
+      hourStartTimestamp
+      assetId
+      liquidity
+      volume
+      txCount
+    }
+  }
+`
