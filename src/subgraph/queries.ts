@@ -1,19 +1,31 @@
 // import { gql } from 'graphql-request'
 import { gql } from '@apollo/client'
 
+export const getReceiverFulfilledQuery = gql`
+  query ($receivingChainId: BigInt!, $skip: Int) {
+    transactions(
+      where: { status: "Fulfilled", receivingChainId: $receivingChainId }
+      orderBy: preparedTimestamp
+      first: 1000
+      skip: $skip
+      orderDirection: asc
+    ) {
+      chainId
+      preparedTimestamp
+      receivingAssetId
+      amount
+    }
+  }
+`
+
 export const getReceiverTransactionsQuery = gql`
-  query(
-    $receivingChainId: BigInt!
-    $status: TransactionStatus!
-    $first: Int
-    $skip: Int
-  ) {
+  query ($receivingChainId: BigInt!, $status: TransactionStatus!, $skip: Int) {
     transactions(
       where: { status: $status, receivingChainId: $receivingChainId }
       orderBy: preparedBlockNumber
-      first: $first
+      first: 1000
       skip: $skip
-      orderDirection: desc
+      orderDirection: asc
     ) {
       id
       status
