@@ -1,22 +1,67 @@
-import React from 'react'
+import React, { Suspense, useState, useEffect, useMemo } from 'react'
 import './App.css'
-import {
-  getRouterLiquidity,
-  getTransactionVolume,
-  getReceiverTransactionsQuery,
-} from './subgraph'
-import { useQuery } from '@apollo/client'
+import { getRouterLiquidity, getTransactionVolume, fetchTransactionVolumeData } from './subgraph'
 
-import { Body, Button, Header } from './components'
+import { useProtocolChartData } from 'state'
+import { AutoColumn } from 'components/Column'
+import { ButtonPrimary } from 'components/Button'
+import useTheme from 'hooks/useTheme'
+import { TYPE } from 'theme'
+import { MonoSpace } from 'components/shared'
+import { formatDollarAmount } from 'utils/numbers'
+import { unixToDate } from 'utils/date'
+
+// import { Body, Button, Header } from './components'
+// import LineChart from 'components/LineChart/alt'
+import { ResponsiveRow, RowBetween, RowFixed } from 'components/Row'
+import BarChart from 'components/BarChart/alt'
+// import { Route, Switch, useLocation } from 'react-router-dom'
+import styled from 'styled-components'
+// import GoogleAnalyticsReporter from 'components/analytics/GoogleAnalyticsReporter'
+// import Header from 'components/Header'
+// import URLWarning from 'components/Header/URLWarning'
+// import Popups from 'components/Popups'
+// import DarkModeQueryParamReader from 'theme/DarkModeQueryParamReader'
+// import TopBar from 'components/Header/TopBar'
+
+import { LocalLoader } from 'components/Loader'
+
+// import { ExternalLink, TYPE } from 'theme'
+// import { useActiveNetworkVersion, useSubgraphStatus } from 'state/application/hooks'
+// import { DarkGreyCard } from 'components/Card'
+// import {
+//   SUPPORTED_NETWORK_VERSIONS,
+//   EthereumNetworkInfo,
+//   OptimismNetworkInfo,
+//   ArbitrumNetworkInfo,
+// } from 'constants/networks'
 
 function App() {
-  const { loading, error, data } = useQuery(getReceiverTransactionsQuery)
+  const theme = useTheme()
+  // pretend load buffer
+  const [loading, setLoading] = useState(true)
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 1300)
+  }, [])
 
-  React.useEffect(() => {
-    if (!loading && !error && data && data.transfers) {
-      console.log({ transfers: data.transfers })
+  const [volumeHover, setVolumeHover] = useState<number | undefined>()
+  const [liquidityHover, setLiquidityHover] = useState<number | undefined>()
+  const [leftLabel, setLeftLabel] = useState<string | undefined>()
+  const [rightLabel, setRightLabel] = useState<string | undefined>()
+
+  const { chartData, totalVolume } = useProtocolChartData()
+
+  useEffect(() => {
+    setLiquidityHover(undefined)
+    setVolumeHover(undefined)
+  }, [])
+
+  // if hover value undefined, reset to current day value
+  useEffect(() => {
+    if (!volumeHover && totalVolume) {
+      setVolumeHover(totalVolume)
     }
-  }, [loading, error, data])
+  }, [totalVolume, volumeHover])
 
   const liq = async () => {
     try {
@@ -26,6 +71,13 @@ function App() {
     }
   }
 
+  const test = async () => {
+    try {
+      await fetchTransactionVolumeData()
+    } catch (e) {
+      console.error(e)
+    }
+  }
   const transactionVolume = async () => {
     try {
       await getTransactionVolume()
@@ -33,15 +85,83 @@ function App() {
       console.error(e)
     }
   }
-  return (
-    <div>
-      <Header></Header>
-      <Body>
-        <Button onClick={() => liq()}>Get Liquidity</Button>
 
-        <Button onClick={() => transactionVolume()}>Get Total Volume</Button>
-      </Body>
-    </div>
+  const formattedVolumeData = useMemo(() => {
+    if (chartData) {
+      return chartData.map((day) => {
+        return {
+          time: unixToDate(day.date),
+          value: day.volumeUSD,
+        }
+      })
+    } else {
+      return []
+    }
+  }, [chartData])
+
+  return (
+    <Suspense fallback={null}>
+      {/* <Route component={GoogleAnalyticsReporter} />
+      <Route component={DarkModeQueryParamReader} /> */}
+      {loading ? (
+        <LocalLoader fill={true} />
+      ) : (
+        <AppWrapper>
+          <HeaderWrapper></HeaderWrapper>
+          <BodyWrapper>
+            <ButtonPrimary onClick={test}>test</ButtonPrimary>
+            <ResponsiveRow>
+              {/* <ChartWrapper>
+                <LineChart
+                  data={formattedTvlData}
+                  height={220}
+                  minHeight={332}
+                  color={activeNetwork.primaryColor}
+                  value={liquidityHover}
+                  label={leftLabel}
+                  setValue={setLiquidityHover}
+                  setLabel={setLeftLabel}
+                  topLeft={
+                    <AutoColumn gap="4px">
+                      <TYPE.mediumHeader fontSize="16px">TVL</TYPE.mediumHeader>
+                      <TYPE.largeHeader fontSize="32px">
+                        <MonoSpace>{formatDollarAmount(liquidityHover, 2, true)} </MonoSpace>
+                      </TYPE.largeHeader>
+                      <TYPE.main fontSize="12px" height="14px">
+                        {leftLabel ? <MonoSpace>{leftLabel} (UTC)</MonoSpace> : null}
+                      </TYPE.main>
+                    </AutoColumn>
+                  }
+                />
+              </ChartWrapper> */}
+              <ChartWrapper>
+                <BarChart
+                  height={220}
+                  minHeight={332}
+                  data={formattedVolumeData}
+                  color={theme.blue1}
+                  setValue={setVolumeHover}
+                  setLabel={setRightLabel}
+                  value={volumeHover}
+                  label={rightLabel}
+                  topLeft={
+                    <AutoColumn gap="4px">
+                      <TYPE.mediumHeader fontSize="16px">Volume 24H</TYPE.mediumHeader>
+                      <TYPE.largeHeader fontSize="32px">
+                        <MonoSpace> {formatDollarAmount(volumeHover, 3)}</MonoSpace>
+                      </TYPE.largeHeader>
+                      <TYPE.main fontSize="12px" height="14px">
+                        {rightLabel ? <MonoSpace>{rightLabel} (UTC)</MonoSpace> : null}
+                      </TYPE.main>
+                    </AutoColumn>
+                  }
+                />
+              </ChartWrapper>
+            </ResponsiveRow>
+          </BodyWrapper>
+        </AppWrapper>
+      )}
+    </Suspense>
   )
 }
 
@@ -59,3 +179,75 @@ export default App
 //   )
 //   console.log({ tokenBalance: tokenBalance.toString() })
 // }
+
+const AppWrapper = styled.div`
+  display: flex;
+  flex-flow: column;
+  align-items: center;
+  overflow-x: hidden;
+  min-height: 100vh;
+`
+
+const HeaderWrapper = styled.div`
+  ${({ theme }) => theme.flexColumnNoWrap}
+  width: 100%;
+  position: fixed;
+  justify-content: space-between;
+  z-index: 2;
+`
+
+const BodyWrapper = styled.div<{ warningActive?: boolean }>`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding-top: 40px;
+  margin-top: ${({ warningActive }) => (warningActive ? '140px' : '100px')};
+  align-items: center;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  z-index: 1;
+
+  > * {
+    max-width: 1200px;
+  }
+
+  @media (max-width: 1080px) {
+    padding-top: 2rem;
+    margin-top: 140px;
+  }
+`
+
+const Marginer = styled.div`
+  margin-top: 5rem;
+`
+
+const Hide1080 = styled.div`
+  @media (max-width: 1080px) {
+    display: none;
+  }
+`
+
+const WarningWrapper = styled.div`
+  width: 100%;
+  display: flex;
+  justify-content: center;
+`
+
+const WarningBanner = styled.div`
+  background-color: ${({ theme }) => theme.bg3};
+  padding: 1rem;
+  color: white;
+  font-size: 14px;
+  width: 100%;
+  text-align: center;
+  font-weight: 500;
+`
+
+const ChartWrapper = styled.div`
+  width: 49%;
+
+  ${({ theme }) => theme.mediaWidth.upToSmall`
+    width: 100%;
+  `};
+`
