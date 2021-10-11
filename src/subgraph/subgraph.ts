@@ -1,32 +1,34 @@
 import { request } from 'graphql-request'
 import { utils } from 'ethers'
+import { useState, useEffect } from 'react'
 import { getDeployedSubgraphUri, getChainData } from '@connext/nxtp-utils'
 import { getReceiverTransactionsQuery, getLiquidityQuery, getReceiverFulfilledQuery } from './queries'
 import { config } from '../config'
-import { polygonClient } from 'apollo/client'
+import { ChartDayData } from 'types'
+import { ApolloClient, NormalizedCacheObject } from '@apollo/client'
+import { apolloClients } from 'apollo/client'
 
-export const getTransactionVolumeUsingApollo = async () => {
+export const getTransactionVolumeUsingApollo = async (chainId: number, client: ApolloClient<NormalizedCacheObject>) => {
   // let error = false
   let data: any = []
   let skip = 0
   let allFound = false
 
-  console.log(polygonClient)
   try {
     while (!allFound) {
       const {
         data: chartResData,
         error,
         loading,
-      } = await polygonClient.query({
+      } = await client.query({
         query: getReceiverFulfilledQuery,
         variables: {
-          receivingChainId: 137,
+          receivingChainId: chainId,
           skip: skip,
         },
         fetchPolicy: 'cache-first',
       })
-      console.log(chartResData, error, loading)
+      // console.log(chartResData, error, loading)
       if (!loading) {
         skip += 1000
         if (chartResData.transactions.length < 1000 || error) {
@@ -48,7 +50,20 @@ export const getTransactionVolumeUsingApollo = async () => {
 
 export const fetchTransactionVolumeData = async (): Promise<any> => {
   const chainData = await getChainData()
-  const allTransactions = await getTransactionVolumeUsingApollo()
+  const chains = config.chains
+  let allTransactions: any = []
+
+  for (const chainId of chains) {
+    console.log(chainId)
+    const client = apolloClients(chainId)
+    if (client) {
+      const txs = await getTransactionVolumeUsingApollo(chainId, client)
+      allTransactions = allTransactions.concat(txs)
+    } else {
+      throw new Error('subgraph fked you')
+    }
+  }
+  console.log(allTransactions)
   const dayUnixTimestamp = 86400
 
   // unixDataStartTimeStamp => { StartTimestamp, TotalVolume }
@@ -84,6 +99,46 @@ export const fetchTransactionVolumeData = async (): Promise<any> => {
 
   console.log(chartData, totalVolume)
   return { chartData, totalVolume }
+}
+
+/**
+ * Fetch historic chart data
+ */
+export function useFetchGlobalChartData(): {
+  error: boolean
+  data: ChartDayData[] | undefined
+  totalVolume: number | undefined
+} {
+  const [data, setData] = useState<ChartDayData[] | undefined>()
+  const [totalVolume, setTotalVolume] = useState<number | undefined>()
+  const [error, setError] = useState(false)
+  // const { dataClient } = useClients()
+
+  // const [activeNetworkVersion] = useActiveNetworkVersion()
+  const indexedData = data
+  const tv = totalVolume
+
+  useEffect(() => {
+    async function fetch() {
+      const { chartData: data, totalVolume } = await fetchTransactionVolumeData()
+      if (data && totalVolume) {
+        setData(data)
+        setTotalVolume(totalVolume)
+      } else if (error) {
+        setError(true)
+      }
+    }
+    if (!indexedData && !error) {
+      fetch()
+    }
+  }, [data, error, indexedData])
+
+  console.log(indexedData)
+  return {
+    error,
+    data: indexedData,
+    totalVolume: tv,
+  }
 }
 
 export const getTransactionVolume = async () => {
