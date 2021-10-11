@@ -2,7 +2,8 @@ import React, { Suspense, useState, useEffect, useMemo } from 'react'
 import './App.css'
 import { getRouterLiquidity, getTransactionVolume, fetchTransactionVolumeData } from './subgraph'
 
-import { useProtocolChartData } from 'state'
+import { useProtocolChartData, useProtocolData } from 'state/protocol/hooks'
+// import { useProtocolChartData } from 'state'
 import { AutoColumn } from 'components/Column'
 import { ButtonPrimary } from 'components/Button'
 import useTheme from 'hooks/useTheme'
@@ -49,7 +50,8 @@ function App() {
   const [leftLabel, setLeftLabel] = useState<string | undefined>()
   const [rightLabel, setRightLabel] = useState<string | undefined>()
 
-  const { chartData, totalVolume } = useProtocolChartData()
+  const [chartData] = useProtocolChartData()
+  const [totalVolume] = useProtocolData()
 
   useEffect(() => {
     setLiquidityHover(undefined)
@@ -63,13 +65,13 @@ function App() {
     }
   }, [totalVolume, volumeHover])
 
-  const liq = async () => {
-    try {
-      await getRouterLiquidity()
-    } catch (e) {
-      console.error(e)
-    }
-  }
+  // const liq = async () => {
+  //   try {
+  //     await getRouterLiquidity()
+  //   } catch (e) {
+  //     console.error(e)
+  //   }
+  // }
 
   const test = async () => {
     try {
@@ -78,7 +80,7 @@ function App() {
       console.error(e)
     }
   }
-  const transactionVolume = async () => {
+  const _getTransactionVolume = async () => {
     try {
       await getTransactionVolume()
     } catch (e) {
@@ -109,7 +111,9 @@ function App() {
         <AppWrapper>
           <HeaderWrapper></HeaderWrapper>
           <BodyWrapper>
-            <ButtonPrimary onClick={test}>test</ButtonPrimary>
+            {/* <ButtonPrimary onClick={test}>test</ButtonPrimary>
+            <ButtonPrimary onClick={_getTransactionVolume}>getTransactionVolume</ButtonPrimary> */}
+
             <ResponsiveRow>
               {/* <ChartWrapper>
                 <LineChart
@@ -146,7 +150,7 @@ function App() {
                   label={rightLabel}
                   topLeft={
                     <AutoColumn gap="4px">
-                      <TYPE.mediumHeader fontSize="16px">Volume 24H</TYPE.mediumHeader>
+                      <TYPE.mediumHeader fontSize="16px">Total Volume</TYPE.mediumHeader>
                       <TYPE.largeHeader fontSize="32px">
                         <MonoSpace> {formatDollarAmount(volumeHover, 3)}</MonoSpace>
                       </TYPE.largeHeader>
