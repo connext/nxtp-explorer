@@ -3,6 +3,12 @@ import ReactDOM from 'react-dom'
 import './index.css'
 import App from './App'
 import reportWebVitals from './reportWebVitals'
+import UserUpdater from './state/user/updater'
+import ProtocolUpdater from './state/protocol/updater'
+// import TokenUpdater from './state/tokens/updater'
+// import PoolUpdater from './state/pools/updater'
+// import ApplicationUpdater from './state/application/updater'
+// import ListUpdater from './state/lists/updater'
 import { ApolloClient, InMemoryCache, ApolloProvider, useQuery, gql } from '@apollo/client'
 import store from './state'
 import { Provider } from 'react-redux'
@@ -16,12 +22,25 @@ const client = new ApolloClient({
   cache: new InMemoryCache(),
 })
 
+function Updaters() {
+  return (
+    <>
+      {/* <ListUpdater /> */}
+      <UserUpdater />
+      <ProtocolUpdater />
+      {/* <TokenUpdater />
+      <PoolUpdater />
+      <ApplicationUpdater /> */}
+    </>
+  )
+}
+
 ReactDOM.render(
   <StrictMode>
     <FixedGlobalStyle />
     <ApolloProvider client={client}>
       <Provider store={store}>
-        {/* <Updaters /> */}
+        <Updaters />
         <ThemeProvider>
           <ThemedGlobalStyle />
           <HashRouter>
